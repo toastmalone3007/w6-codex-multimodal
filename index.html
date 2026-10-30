@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Describer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Image Describer</h1>
+    <p class="subtitle">Choose an image and let a local AI model (llava via Ollama) describe it.</p>
+
+    <section class="card">
+      <label for="imageInput" class="file-label">Choose an image</label>
+      <input type="file" id="imageInput" accept="image/*">
+
+      <div id="preview" class="preview">
+        <p class="placeholder">No image selected yet.</p>
+      </div>
+
+      <button id="describeBtn" type="button">Describe Image</button>
+
+      <p id="status" class="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>AI Description</h2>
+      <div id="result" class="result">The description will appear here.</div>
+    </section>
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>
