@@ -38,3 +38,27 @@ imageInput.addEventListener("change", () => {
   };
   reader.readAsDataURL(file);
 });
+
+// Ollama runs locally and listens on port 11434.
+const OLLAMA_URL = "http://localhost:11434/api/generate";
+const MODEL = "llava"; // a vision model, so it can understand images
+
+// When the button is clicked, send the image to Ollama.
+describeBtn.addEventListener("click", async () => {
+  // Ollama wants only the base64 part, without the "data:image/...;base64," prefix.
+  const base64Image = imageDataUrl.split(",")[1];
+
+  const response = await fetch(OLLAMA_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL,
+      prompt: "Describe this image in detail.",
+      images: [base64Image],
+      stream: false, // get one complete answer instead of many small pieces
+    }),
+  });
+
+  const data = await response.json();
+  console.log("Ollama response:", data);
+});
