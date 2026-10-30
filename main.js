@@ -43,10 +43,31 @@ imageInput.addEventListener("change", () => {
 const OLLAMA_URL = "http://localhost:11434/api/generate";
 const MODEL = "llava"; // a vision model, so it can understand images
 
+// Large photos are too big for Ollama (it answers "413 Payload Too Large"),
+// so we draw the image onto a canvas at a smaller size and export it as a JPEG.
+const MAX_SIZE = 1024; // longest side in pixels
+
+function resizeImage(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, MAX_SIZE / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.9));
+    };
+    img.src = dataUrl;
+  });
+}
+
 // When the button is clicked, send the image to Ollama.
 describeBtn.addEventListener("click", async () => {
+  const smallDataUrl = await resizeImage(imageDataUrl);
+
   // Ollama wants only the base64 part, without the "data:image/...;base64," prefix.
-  const base64Image = imageDataUrl.split(",")[1];
+  const base64Image = smallDataUrl.split(",")[1];
 
   const response = await fetch(OLLAMA_URL, {
     method: "POST",
@@ -61,4 +82,13 @@ describeBtn.addEventListener("click", async () => {
 
   const data = await response.json();
   console.log("Ollama response:", data);
+
+  // If Ollama sent back an error code (like 413), show it instead of crashing.
+  if (!response.ok) {
+    resultEl.textContent = `Ollama returned an error (${response.status}): ${data.error}`;
+    return;
+  }
+
+  // The description text is in the "response" field of Ollama's reply.
+  resultEl.textContent = data.response.trim();
 });
