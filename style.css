@@ -89,6 +89,22 @@ button:disabled {
   font-weight: 500;
 }
 
+.status.info {
+  color: #5b6172;
+}
+
+.status.loading {
+  color: #3b5bdb;
+}
+
+.status.success {
+  color: #2b8a3e;
+}
+
+.status.error {
+  color: #c92a2a;
+}
+
 .result {
   white-space: pre-wrap;
   line-height: 1.5;

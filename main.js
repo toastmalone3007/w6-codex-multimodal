@@ -35,6 +35,7 @@ imageInput.addEventListener("change", () => {
     img.src = imageDataUrl;
     img.alt = file.name;
     preview.appendChild(img);
+    setStatus(`Selected: ${file.name}`, "info");
   };
   reader.readAsDataURL(file);
 });
@@ -62,33 +63,65 @@ function resizeImage(dataUrl) {
   });
 }
 
+// Show a message under the button. type is "info", "loading", "success" or "error",
+// which picks the colour from style.css.
+function setStatus(message, type) {
+  statusEl.textContent = message;
+  statusEl.className = `status ${type}`;
+}
+
 // When the button is clicked, send the image to Ollama.
 describeBtn.addEventListener("click", async () => {
-  const smallDataUrl = await resizeImage(imageDataUrl);
-
-  // Ollama wants only the base64 part, without the "data:image/...;base64," prefix.
-  const base64Image = smallDataUrl.split(",")[1];
-
-  const response = await fetch(OLLAMA_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: MODEL,
-      prompt: "Describe this image in detail.",
-      images: [base64Image],
-      stream: false, // get one complete answer instead of many small pieces
-    }),
-  });
-
-  const data = await response.json();
-  console.log("Ollama response:", data);
-
-  // If Ollama sent back an error code (like 413), show it instead of crashing.
-  if (!response.ok) {
-    resultEl.textContent = `Ollama returned an error (${response.status}): ${data.error}`;
+  // Feedback 1: no image selected.
+  if (!imageDataUrl) {
+    setStatus("Please choose an image first.", "error");
     return;
   }
 
-  // The description text is in the "response" field of Ollama's reply.
-  resultEl.textContent = data.response.trim();
+  // Feedback 2: processing. Disable the button so it can't be clicked twice.
+  setStatus("Describing image... this can take 10-30 seconds.", "loading");
+  describeBtn.disabled = true;
+  resultEl.textContent = "";
+
+  try {
+    const smallDataUrl = await resizeImage(imageDataUrl);
+
+    // Ollama wants only the base64 part, without the "data:image/...;base64," prefix.
+    const base64Image = smallDataUrl.split(",")[1];
+
+    const response = await fetch(OLLAMA_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        prompt: "Describe this image in detail.",
+        images: [base64Image],
+        stream: false, // get one complete answer instead of many small pieces
+      }),
+    });
+
+    const data = await response.json();
+    console.log("Ollama response:", data);
+
+    // Ollama answered, but with an error code (e.g. 413 or model not found).
+    if (!response.ok) {
+      throw new Error(`Ollama returned an error (${response.status}): ${data.error}`);
+    }
+
+    // Feedback 3: success. The description is in the "response" field.
+    resultEl.textContent = data.response.trim();
+    setStatus("Done! Here is the description.", "success");
+  } catch (error) {
+    // Feedback 4: something went wrong. fetch throws a TypeError when it
+    // can't reach Ollama at all (not running, or blocked by CORS).
+    console.error(error);
+    if (error instanceof TypeError) {
+      setStatus("Could not reach Ollama. Is it running on localhost:11434?", "error");
+    } else {
+      setStatus(error.message, "error");
+    }
+  } finally {
+    // Runs whether it worked or not, so the button is always usable again.
+    describeBtn.disabled = false;
+  }
 });
