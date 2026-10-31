@@ -2,7 +2,8 @@
 // Grab the page elements we will work with.
 const describeBtn = document.getElementById("describeBtn");
 const statusEl = document.getElementById("status");
-const resultEl = document.getElementById("result");
+// One result box per image, in the same order as imageDataUrls.
+const resultEls = [document.getElementById("result1"), document.getElementById("result2")];
 
 // Holds each selected image as a data URL ("data:image/png;base64,....").
 // imageDataUrls[0] is Image 1 and imageDataUrls[1] is Image 2; null means not selected.
@@ -120,22 +121,20 @@ describeBtn.addEventListener("click", async () => {
 
   // Feedback 2: processing. Disable the button so it can't be clicked twice.
   describeBtn.disabled = true;
-  resultEl.textContent = "";
+  resultEls.forEach((el) => (el.textContent = ""));
 
   try {
-    const descriptions = [];
-
     // One request at a time: llava runs on this computer, so asking for both
     // at once would not be faster and could slow everything down.
     for (let slot = 0; slot < imageDataUrls.length; slot++) {
       if (!imageDataUrls[slot]) continue;
       setStatus(`Describing Image ${slot + 1}... this can take 10-30 seconds.`, "loading");
-      const text = await describeImage(imageDataUrls[slot]);
-      descriptions.push(`Image ${slot + 1}: ${text}`);
+      resultEls[slot].textContent = "Working on it...";
+      // Each description goes into its own box, so it's clear which image it belongs to.
+      resultEls[slot].textContent = await describeImage(imageDataUrls[slot]);
     }
 
     // Feedback 3: success.
-    resultEl.textContent = descriptions.join("\n\n");
     setStatus("Done! Here are the descriptions.", "success");
   } catch (error) {
     // Feedback 4: something went wrong. fetch throws a TypeError when it
