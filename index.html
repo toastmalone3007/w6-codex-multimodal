@@ -9,17 +9,28 @@
 <body>
   <main class="container">
     <h1>Image Describer</h1>
-    <p class="subtitle">Choose an image and let a local AI model (llava via Ollama) describe it.</p>
+    <p class="subtitle">Choose two images and let a local AI model (llava via Ollama) describe each one.</p>
 
     <section class="card">
-      <label for="imageInput" class="file-label">Choose an image</label>
-      <input type="file" id="imageInput" accept="image/*">
+      <div class="image-grid">
+        <div class="image-slot">
+          <label for="imageInput1" class="file-label">Image 1</label>
+          <input type="file" id="imageInput1" accept="image/*">
+          <div id="preview1" class="preview">
+            <p class="placeholder">No image selected yet.</p>
+          </div>
+        </div>
 
-      <div id="preview" class="preview">
-        <p class="placeholder">No image selected yet.</p>
+        <div class="image-slot">
+          <label for="imageInput2" class="file-label">Image 2</label>
+          <input type="file" id="imageInput2" accept="image/*">
+          <div id="preview2" class="preview">
+            <p class="placeholder">No image selected yet.</p>
+          </div>
+        </div>
       </div>
 
-      <button id="describeBtn" type="button">Describe Image</button>
+      <button id="describeBtn" type="button">Describe Images</button>
 
       <p id="status" class="status"></p>
     </section>

@@ -37,6 +37,23 @@ h1 {
   font-size: 1.1rem;
 }
 
+.image-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Stack the two images on narrow screens. */
+@media (max-width: 600px) {
+  .image-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.image-slot input[type="file"] {
+  max-width: 100%;
+}
+
 .file-label {
   display: block;
   font-weight: 600;
