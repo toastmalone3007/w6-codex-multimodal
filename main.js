@@ -123,20 +123,36 @@ describeBtn.addEventListener("click", async () => {
   describeBtn.disabled = true;
   resultEls.forEach((el) => (el.textContent = ""));
 
+  // Remember which slot is being worked on, so an error can be shown in that slot's box.
+  let currentSlot = null;
+
   try {
     // One request at a time: llava runs on this computer, so asking for both
     // at once would not be faster and could slow everything down.
     for (let slot = 0; slot < imageDataUrls.length; slot++) {
-      if (!imageDataUrls[slot]) continue;
+      // Only one image chosen: say so in the empty slot instead of leaving it blank.
+      if (!imageDataUrls[slot]) {
+        resultEls[slot].textContent = "No image selected, so nothing to describe.";
+        continue;
+      }
+      currentSlot = slot;
       setStatus(`Describing Image ${slot + 1}... this can take 10-30 seconds.`, "loading");
       resultEls[slot].textContent = "Working on it...";
       // Each description goes into its own box, so it's clear which image it belongs to.
       resultEls[slot].textContent = await describeImage(imageDataUrls[slot]);
     }
 
-    // Feedback 3: success.
-    setStatus("Done! Here are the descriptions.", "success");
+    // Feedback 3: success. Mention it if only one of the two images was described.
+    const missing = imageDataUrls.findIndex((url) => !url);
+    if (missing === -1) {
+      setStatus("Done! Here are the descriptions.", "success");
+    } else {
+      setStatus(`Done! Only one image was selected, so Image ${missing + 1} was skipped.`, "success");
+    }
   } catch (error) {
+    if (currentSlot !== null) {
+      resultEls[currentSlot].textContent = "Could not describe this image.";
+    }
     // Feedback 4: something went wrong. fetch throws a TypeError when it
     // can't reach Ollama at all (not running, or blocked by CORS).
     console.error(error);
