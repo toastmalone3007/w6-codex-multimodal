@@ -1,0 +1,175 @@
+PROMPT HISTORY - w6-codex-multimodal
+
+Note: I used Claude Code (Claude) as my coding assistant for this assignment
+instead of Codex. The prompts below are the messages I actually sent, in order,
+with a short note on what happened after each one.
+
+
+==================================================
+TASK 1 - Single Image Describer
+==================================================
+
+Prompt 1:
+help me complete this please  (attached the assignment PDF)
+-> The assistant read the brief, checked my computer, and found Ollama was not
+   installed. It suggested working step by step instead of building it all at once.
+
+Prompt 2:
+ollama is now installed
+-> It found I only had llama3.2, which is text-only and cannot understand images.
+   It explained I need a vision model and suggested llava or moondream.
+
+Prompt 3:
+llava (4.7 GB)
+-> Downloaded llava and tested it with a sample picture. Learned the request
+   format: POST http://localhost:11434/api/generate with
+   { model, prompt, images: [base64], stream: false }, and the text comes back
+   in the "response" field.
+
+Prompt 4:
+Desktop
+-> Created the w6-codex-multimodal folder with an output folder, started a Git
+   repo on the task1 branch.
+
+Prompt 5:
+(sent a screenshot of GitHub Desktop's "Create a new repository" dialog)
+-> Learned I should use "Add local repository" instead, because the repo already
+   existed, and that I can only publish after the first commit.
+
+Prompt 6:
+4, is that the summary and description???
+-> Explained the Summary (the commit message) and Description (optional) boxes
+   in GitHub Desktop.
+
+Prompt 7:
+idk what to commit
+-> The folder was still empty, so we built the first piece: the basic page
+   (file input, preview box, Describe Image button, status line, result area).
+   Commit: "Create initial web interface"
+
+Prompt 8:
+Done, next step
+-> Checked Git and found the commit had NOT actually been made yet.
+
+Prompt 9:
+(sent a screenshot of GitHub Desktop with the commit ready)
+-> Confirmed I was in the right repo and branch; told me to click Commit, then
+   Publish. The "LF line endings" warning is harmless.
+
+Prompt 10:
+done
+-> The repo was published to GitHub but was still empty - the commit had not
+   gone through.
+
+Prompt 11:
+Yes, do it
+-> The assistant made the first commit and pushed task1 to GitHub.
+
+Prompt 12:
+Add preview
+-> Added the image preview. FileReader.readAsDataURL() turns the file into a
+   data URL ("data:image/png;base64,...") that an <img> can show. The part after
+   the comma is the base64 Ollama needs later.
+   Commit: "Add image preview"
+
+Prompt 13:
+Works, commit it
+-> Committed the preview. Added the click handler that sends the image to Ollama
+   with fetch() and logs the reply in the console.
+   Problem found: opening index.html by double-clicking (file://) makes Ollama
+   reject the request with 403, because the browser sends Origin: null.
+   Fix: serve the page from a local server.
+
+Prompt 14:
+VS Code Live Server
+-> Installed Live Server so the page runs at http://127.0.0.1:5500, which Ollama
+   allows.
+
+Prompt 15:
+its not giving the description
+-> Troubleshooting: the request worked, but the code only printed the reply to
+   the console. Added resultEl.textContent = data.response.trim() to show it on
+   the page.
+   Commit: "Connect application to Ollama"
+
+Prompt 16:
+Still not showing
+-> Troubleshooting: Ollama's log showed my clicks were rejected with 413
+   (Payload Too Large) because my photo was too big. Fixed by resizing the image
+   on a <canvas> to max 1024px and sending it as a JPEG, and by checking
+   response.ok so an error is shown instead of silently crashing.
+
+Prompt 17:
+Works now
+-> Commit: "Display AI response"
+
+Prompt 18:
+Next step
+-> Added feedback for all the cases in the brief: no image selected, processing
+   (button disabled), success, and errors (Ollama not running = TypeError from
+   fetch, or an error code from Ollama). Used try / catch / finally and a
+   setStatus() helper with CSS colours.
+
+Prompt 19:
+one quick question, what's the deliverable for this assignment?
+-> Got a checklist: code files, task1 and task2 branches, six screenshots in
+   output/, prompt-history.txt, the ZIP, and the GitHub link.
+
+Prompt 20:
+refreshed the page and did ctrl + f5 this is the result, are we good to proceed further?
+-> Commit: "Add loading and error handling". Got instructions for the three
+   Task 1 screenshots.
+
+Prompt 21:
+how do i save them in the outputs?
+-> Steps for Snipping Tool (Win + Shift + S, Save as PNG). The folder is
+   "output", not "outputs".
+
+Prompt 22:
+not yet saved, can i do that step later?
+-> Learned it's easier before creating task2, otherwise the page would already
+   show the two-image version.
+
+Prompt 23:
+are you able to put them for me?
+-> The assistant took the screenshots by running the app in headless Chrome.
+   Problem found: Live Server reloads the page whenever a file in the folder
+   changes, so saving screenshots into output/ reset the page mid-run. Fixed by
+   saving them elsewhere first.
+   Commit: "Add Task 1 screenshots"
+
+
+==================================================
+TASK 2 - Two-Image Challenge
+==================================================
+
+Prompt 1:
+Start Task 2
+-> Created the task2 branch from task1. Added a second file input and preview.
+   Instead of copying the preview code, one function setupImageSlot(slot) is
+   used for both images, and the images are kept in an array
+   imageDataUrls = [null, null] (index 0 = Image 1, index 1 = Image 2).
+   Commit: "Add support for second image"
+
+Prompt 2:
+what prompt should i use?
+-> Discussed the key question: send both images in one request or two?
+   One request would make llava blend both images into one mixed description,
+   so each image needs its own request.
+
+Prompt 3:
+please finish everything for me
+-> The assistant finished the remaining steps:
+   - describeImage() sends one image and returns its text; the click handler
+     loops over the images one at a time (llava runs locally, so doing both at
+     once would not be faster).
+     Commit: "Process multiple images"
+   - Two labelled result boxes, "Image 1" and "Image 2", so each description is
+     clearly matched to its image.
+     Commit: "Display separate image responses"
+   - Only one image selected: that one is described, the empty slot says
+     "No image selected", and the status says which image was skipped. If an
+     image fails, its own box says so.
+     Commit: "Handle missing second image"
+   - Took the three Task 2 screenshots.
+     Commit: "Add Task 2 screenshots"
