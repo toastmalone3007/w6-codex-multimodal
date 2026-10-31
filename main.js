@@ -78,50 +78,65 @@ function setStatus(message, type) {
   statusEl.className = `status ${type}`;
 }
 
-// When the button is clicked, send the image to Ollama.
-describeBtn.addEventListener("click", async () => {
-  // For now this still only sends Image 1; sending both comes next.
-  const imageDataUrl = imageDataUrls[0];
+// Send ONE image to Ollama and return its description text.
+// We call this once per image: if both images went in a single request,
+// llava would mix them into one blended answer instead of two separate ones.
+async function describeImage(imageDataUrl) {
+  const smallDataUrl = await resizeImage(imageDataUrl);
 
+  // Ollama wants only the base64 part, without the "data:image/...;base64," prefix.
+  const base64Image = smallDataUrl.split(",")[1];
+
+  const response = await fetch(OLLAMA_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL,
+      prompt: "Describe this image in detail.",
+      images: [base64Image],
+      stream: false, // get one complete answer instead of many small pieces
+    }),
+  });
+
+  const data = await response.json();
+  console.log("Ollama response:", data);
+
+  // Ollama answered, but with an error code (e.g. 413 or model not found).
+  if (!response.ok) {
+    throw new Error(`Ollama returned an error (${response.status}): ${data.error}`);
+  }
+
+  // The description is in the "response" field.
+  return data.response.trim();
+}
+
+// When the button is clicked, send each image to Ollama.
+describeBtn.addEventListener("click", async () => {
   // Feedback 1: no image selected.
-  if (!imageDataUrl) {
+  if (!imageDataUrls[0] && !imageDataUrls[1]) {
     setStatus("Please choose an image first.", "error");
     return;
   }
 
   // Feedback 2: processing. Disable the button so it can't be clicked twice.
-  setStatus("Describing image... this can take 10-30 seconds.", "loading");
   describeBtn.disabled = true;
   resultEl.textContent = "";
 
   try {
-    const smallDataUrl = await resizeImage(imageDataUrl);
+    const descriptions = [];
 
-    // Ollama wants only the base64 part, without the "data:image/...;base64," prefix.
-    const base64Image = smallDataUrl.split(",")[1];
-
-    const response = await fetch(OLLAMA_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        prompt: "Describe this image in detail.",
-        images: [base64Image],
-        stream: false, // get one complete answer instead of many small pieces
-      }),
-    });
-
-    const data = await response.json();
-    console.log("Ollama response:", data);
-
-    // Ollama answered, but with an error code (e.g. 413 or model not found).
-    if (!response.ok) {
-      throw new Error(`Ollama returned an error (${response.status}): ${data.error}`);
+    // One request at a time: llava runs on this computer, so asking for both
+    // at once would not be faster and could slow everything down.
+    for (let slot = 0; slot < imageDataUrls.length; slot++) {
+      if (!imageDataUrls[slot]) continue;
+      setStatus(`Describing Image ${slot + 1}... this can take 10-30 seconds.`, "loading");
+      const text = await describeImage(imageDataUrls[slot]);
+      descriptions.push(`Image ${slot + 1}: ${text}`);
     }
 
-    // Feedback 3: success. The description is in the "response" field.
-    resultEl.textContent = data.response.trim();
-    setStatus("Done! Here is the description.", "success");
+    // Feedback 3: success.
+    resultEl.textContent = descriptions.join("\n\n");
+    setStatus("Done! Here are the descriptions.", "success");
   } catch (error) {
     // Feedback 4: something went wrong. fetch throws a TypeError when it
     // can't reach Ollama at all (not running, or blocked by CORS).
